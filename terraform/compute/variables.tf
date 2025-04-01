@@ -25,3 +25,9 @@ variable "user_data_path" {
 variable "worker_data_path" {
   
 }
+variable "public_subnet_id" {
+  
+}
+variable "ansible_data_path" {
+  
+}

@@ -16,6 +16,8 @@ module "compute" {
   worker_sgs  = module.networking.worker_sg
   worker_count = 2 
   user_data_path = "${path.module}/master-userdata.tpl"
+  public_subnet_id = module.networking.public_subnet_id
   
+  ansible_data_path = "${path.module}/ansible-setup.tpl"
   worker_data_path = "${path.module}/worker-userdata.tpl"
 }

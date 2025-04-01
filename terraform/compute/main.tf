@@ -19,7 +19,7 @@ data "aws_ami" "server_ami" {
 
    vpc_security_group_ids = [var.master_sg]
 
-   subnet_id =  var.private_subnet_id
+   subnet_id =  var.public_subnet_id
 
 
 user_data = templatefile(var.user_data_path, {
@@ -48,6 +48,70 @@ user_data = templatefile(var.user_data_path, {
   }
 
 }
+
+
+
+
+resource "aws_instance" "ansible-server" {
+  
+
+   instance_type = var.instance_type
+   ami = data.aws_ami.server_ami.id
+   
+
+
+
+   vpc_security_group_ids = [var.master_sg]
+
+   subnet_id =  var.public_subnet_id
+
+
+user_data = templatefile(var.ansible_data_path, {
+       
+    
+
+        
+      
+
+
+   } )
+
+
+
+
+
+ 
+   root_block_device {
+     volume_size = var.vol_size
+   }
+
+
+
+  tags = {
+    Name = "Ansible-server"
+  }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 resource "aws_launch_template" "worker-lt" {
   name_prefix   = "worker-node-"
