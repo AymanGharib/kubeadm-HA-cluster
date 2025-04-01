@@ -194,6 +194,18 @@ resource "aws_security_group" "worker_node_sg" {
     security_groups = [aws_security_group.master_node_sg.id] # Restrict to Master SG
   }
 
+
+
+
+ingress  {
+
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+
+  }
+
   // kube-proxy (Internal use for networking, Load Balancers need access)
   ingress {
     from_port = 10256

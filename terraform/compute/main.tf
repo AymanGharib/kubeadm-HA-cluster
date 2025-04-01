@@ -40,7 +40,7 @@ resource "aws_instance" "master-node" {
   root_block_device {
     volume_size = var.vol_size
   }
-  key_name = aws_key_pair.ssh_auth.key_name
+  key_name = aws_key_pair.ansible-key.key_name
 
 
   tags = {
@@ -95,6 +95,13 @@ resource "aws_key_pair" "ssh_auth" {
 }
 
 
+resource "aws_key_pair" "ansible-key" {
+  public_key = file(var.ansible_key_path)
+  key_name   = var.ansible_key_name
+
+}
+
+
 
 
 
@@ -115,7 +122,7 @@ resource "aws_launch_template" "worker-lt" {
   image_id               = data.aws_ami.server_ami.id
   instance_type          = var.instance_type
   vpc_security_group_ids = [var.worker_sgs]
-  key_name               = aws_key_pair.ssh_auth.key_name
+  key_name               = aws_key_pair.ansible-key.key_name
   user_data              = base64encode(templatefile(var.worker_data_path, {}))
   block_device_mappings {
     device_name = "/dev/sda1" # Default root device for Ubuntu
@@ -143,7 +150,7 @@ resource "aws_autoscaling_group" "worker_asg" {
   desired_capacity    = var.worker_count
   min_size            = 1
   max_size            = 5
-  vpc_zone_identifier = [var.private_subnet_id]
+  vpc_zone_identifier = [var.public_subnet_id]
   launch_template {
     id      = aws_launch_template.worker-lt.id
     version = "$Latest"

@@ -40,3 +40,9 @@ variable "public_key_path" {
 variable "ansible_sg" {
   
 }
+variable "ansible_key_name" {
+  
+}
+variable "ansible_key_path" {
+  
+}

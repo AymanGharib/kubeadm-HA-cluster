@@ -1,0 +1,35 @@
+- hosts: master
+  become: yes
+  tasks:
+    - name: Get Ansible host IP
+      command: hostname -I
+      register: ansible_host_ip
+      changed_when: false
+
+    - name: Replace 'localhost' with the actual master node IP in kube-apiserver.yaml
+      replace:
+        path: "/etc/kubernetes/manifests/kube-apiserver.yaml"
+        regexp: "localhost"
+        replace: "{{ ansible_host_ip.stdout.split()[0] }}"
+
+    - name: Restart Kubelet to apply changes
+      systemd:
+        name: kubelet
+        state: restarted
+
+    - name: Ensure ~/.kube directory exists
+      file:
+        path: "/home/ubuntu/.kube"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: "0755"
+
+    - name: Copy Kubeconfig to user directory
+      copy:
+        src: "/etc/kubernetes/admin.conf"
+        dest: "/home/ubuntu/.kube/config"
+        remote_src: yes
+        owner: ubuntu
+        group: ubuntu
+        mode: "0600"

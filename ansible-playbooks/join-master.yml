@@ -1,0 +1,13 @@
+- hosts: worker
+  become: yes
+  tasks:
+    - name: Read the kubeadm token from file
+      slurp:
+        src: "./kubeadm_join_token.txt"
+      register: token_content
+
+    - name: Join the Kubernetes cluster
+      command: > 
+        kubeadm join 13.60.32.150:6443 
+        --token {{ token_content['content'] | b64decode | trim }}
+        --discovery-token-ca-cert-hash sha256:xxx

@@ -1,0 +1,70 @@
+
+- name: Set up Kubernetes Master Node
+  hosts: master
+  become: yes
+  vars:
+    pod_network_cidr: "192.168.0.0/16"
+    
+    node_name: "master"
+    calico_version: "v3.28.0"
+
+  tasks:
+    - name: Initialize Kubernetes control plane
+      command: |
+        kubeadm init \
+          --pod-network-cidr={{ pod_network_cidr }} \
+         
+          --node-name={{ node_name }}
+      register: kubeadm_init
+      args:
+        creates: "/etc/kubernetes/admin.conf"  # Skip if already initialized
+
+    - name: Display join command
+      debug:
+        msg: "Worker node join command: {{ kubeadm_init.stdout_lines[-2] }}"
+
+    - name: Set up kubeconfig for regular user
+      block:
+        - name: Create .kube directory
+          file:
+            path: "~/.kube"
+            state: directory
+            mode: '0755'
+
+        - name: Copy admin.conf to user's kubeconfig
+          command: |
+            cp -i /etc/kubernetes/admin.conf ~/.kube/config
+            chown $(id -u):$(id -g) ~/.kube/config
+          args:
+            creates: "~/.kube/config"
+
+    - name: Install Calico CNI
+      block:
+        - name: Apply Tigera operator
+          command: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/tigera-operator.yaml
+          register: operator_result
+          failed_when: 
+            - operator_result.rc != 0
+            - "'AlreadyExists' not in operator_result.stderr"
+
+        - name: Download Calico custom resources
+          get_url:
+            url: https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/custom-resources.yaml
+            dest: ./custom-resources.yaml
+            mode: '0644'
+
+        - name: Apply Calico custom resources
+          command: kubectl apply -f custom-resources.yaml
+          register: calico_result
+          failed_when: 
+            - calico_result.rc != 0
+            - "'AlreadyExists' not in calico_result.stderr"
+
+    - name: Verify cluster status
+      command: kubectl get nodes
+      register: node_status
+      changed_when: false
+
+    - name: Display cluster status
+      debug:
+        msg: "{{ node_status.stdout_lines }}"

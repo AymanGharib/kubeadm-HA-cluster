@@ -1,0 +1,34 @@
+---
+- name: Set up Kubernetes Master Node and Manage Join Token
+  hosts: master
+  become: yes
+  vars:
+    
+    local_token_path: "./kubeadm_join_token.txt"  
+
+  tasks:
+   
+
+    - name: Generate new join token and save to file
+      command: kubeadm token create --print-join-command
+      register: join_command
+      changed_when: false  # This command doesn't change system state
+      when: "'kubeadm init' in kubeadm_init.stdout"  # Only if init was successful
+
+    - name: Save join command to remote file
+      copy:
+        content: "{{ join_command.stdout }}"
+        dest: /tmp/kubeadm_join_command.txt
+        mode: '0644'
+      when: join_command.stdout != ""
+
+    - name: Display join command
+      debug:
+        msg: "New worker join command: {{ join_command.stdout }}"
+
+    - name: Fetch join command to local control machine
+      fetch:
+        src: /tmp/kubeadm_join_command.txt
+        dest: "{{ local_token_path }}"
+        flat: yes
+      when: join_command.stdout != ""
