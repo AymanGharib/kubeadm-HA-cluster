@@ -20,4 +20,6 @@ module "compute" {
   
   ansible_data_path = "${path.module}/ansible-setup.tpl"
   worker_data_path = "${path.module}/worker-userdata.tpl"
+  key_name = "mylocal-key"
+  public_key_path = "${path.module}/id_ed25519.pub"
 }

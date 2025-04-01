@@ -40,7 +40,7 @@ user_data = templatefile(var.user_data_path, {
    root_block_device {
      volume_size = var.vol_size
    }
-
+key_name = aws_key_pair.ssh_auth.key_name
 
 
   tags = {
@@ -65,7 +65,7 @@ resource "aws_instance" "ansible-server" {
 
    subnet_id =  var.public_subnet_id
 
-
+key_name = aws_key_pair.ssh_auth.key_name
 user_data = templatefile(var.ansible_data_path, {
        
     
@@ -96,6 +96,11 @@ user_data = templatefile(var.ansible_data_path, {
 
 
 
+resource "aws_key_pair" "ssh_auth" {
+    public_key = file(var.public_key_path)
+    key_name = var.key_name
+  
+}
 
 
 
@@ -118,6 +123,7 @@ resource "aws_launch_template" "worker-lt" {
   image_id      = data.aws_ami.server_ami.id
   instance_type = var.instance_type
   vpc_security_group_ids = [var.worker_sgs]
+  key_name = aws_key_pair.ssh_auth.key_name
    user_data = templatefile(var.worker_data_path , {})
  block_device_mappings {
     device_name = "/dev/sda1"  # Default root device for Ubuntu

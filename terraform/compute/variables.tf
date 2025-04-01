@@ -31,3 +31,9 @@ variable "public_subnet_id" {
 variable "ansible_data_path" {
   
 }
+variable "key_name" {
+  
+}
+variable "public_key_path" {
+  
+}
