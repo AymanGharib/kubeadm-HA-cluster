@@ -15,4 +15,7 @@ module "compute" {
   vol_size =  8 
   worker_sgs  = module.networking.worker_sg
   worker_count = 2 
+  user_data_path = "${path.module}/master-userdata.tpl"
+  
+  worker_data_path = "${path.module}/worker-userdata.tpl"
 }

@@ -20,6 +20,22 @@ data "aws_ami" "server_ami" {
    vpc_security_group_ids = [var.master_sg]
 
    subnet_id =  var.private_subnet_id
+
+
+user_data = templatefile(var.user_data_path, {
+       
+    
+
+        
+      
+
+
+   } )
+
+
+
+
+
  
    root_block_device {
      volume_size = var.vol_size
@@ -38,6 +54,18 @@ resource "aws_launch_template" "worker-lt" {
   image_id      = data.aws_ami.server_ami.id
   instance_type = var.instance_type
   vpc_security_group_ids = [var.worker_sgs]
+   user_data = templatefile(var.worker_data_path , {})
+ block_device_mappings {
+    device_name = "/dev/sda1"  # Default root device for Ubuntu
+    
+    ebs {
+      volume_size           = var.vol_size
+      volume_type           = "gp3"
+      delete_on_termination = true
+      encrypted             = true
+    }
+  }
+   
 
   tag_specifications {
     resource_type = "instance"

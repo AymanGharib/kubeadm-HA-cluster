@@ -18,3 +18,10 @@ variable "worker_sgs" {
 variable "worker_count" {
   
 }
+variable "user_data_path" {
+  
+}
+
+variable "worker_data_path" {
+  
+}
