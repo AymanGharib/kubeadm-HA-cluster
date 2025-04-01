@@ -14,7 +14,7 @@ data "aws_availability_zones" "available" {}
 
 resource "random_shuffle" "list_azs" {
   input        = data.aws_availability_zones.available.names
-  result_count = 2  # We only need 2 AZs, one for each subnet
+  result_count = 2 # We only need 2 AZs, one for each subnet
 }
 
 // Public Subnet
@@ -83,6 +83,29 @@ resource "aws_route_table_association" "private_assoc" {
 // set up security groups
 
 
+resource "aws_security_group" "ansible_sg" {
+    name        = "anisble-sg"
+
+    vpc_id      = aws_vpc.kubeadm.id
+    ingress  {
+
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+
+  }
+
+
+
+
+}
+
+
+
+
+
+
 
 resource "aws_security_group" "master_node_sg" {
   name        = "master-node-sg"
@@ -94,15 +117,25 @@ resource "aws_security_group" "master_node_sg" {
     from_port   = 6443
     to_port     = 6443
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # Change to VPC CIDR for internal access only
+    cidr_blocks = ["0.0.0.0/0"] # Change to VPC CIDR for internal access only
   }
+
+  ingress  {
+
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+
+  }
+
 
   // etcd server client API (Only accessible from control plane components)
   ingress {
     from_port   = 2379
     to_port     = 2380
     protocol    = "tcp"
-    cidr_blocks = [aws_vpc.kubeadm.cidr_block]  # Restrict to VPC
+    cidr_blocks = [aws_vpc.kubeadm.cidr_block] # Restrict to VPC
   }
 
   // Kubelet API (Workers need to communicate with master)
@@ -110,23 +143,23 @@ resource "aws_security_group" "master_node_sg" {
     from_port   = 10250
     to_port     = 10250
     protocol    = "tcp"
-    cidr_blocks = [aws_vpc.kubeadm.cidr_block]  # Restrict to VPC
+    cidr_blocks = [aws_vpc.kubeadm.cidr_block] # Restrict to VPC
   }
 
   // kube-scheduler (Self-restricted)
   ingress {
-    from_port   = 10259
-    to_port     = 10259
-    protocol    = "tcp"
-    self        = true  # Only master node can access this
+    from_port = 10259
+    to_port   = 10259
+    protocol  = "tcp"
+    self      = true # Only master node can access this
   }
 
   // kube-controller-manager (Self-restricted)
   ingress {
-    from_port   = 10257
-    to_port     = 10257
-    protocol    = "tcp"
-    self        = true  # Only master node can access this
+    from_port = 10257
+    to_port   = 10257
+    protocol  = "tcp"
+    self      = true # Only master node can access this
   }
 
   // Allow all outbound traffic
@@ -150,18 +183,18 @@ resource "aws_security_group" "worker_node_sg" {
 
   // Kubelet API (Allow control plane to communicate)
   ingress {
-    from_port   = 10250
-    to_port     = 10250
-    protocol    = "tcp"
-    security_groups = [aws_security_group.master_node_sg.id]  # Restrict to Master SG
+    from_port       = 10250
+    to_port         = 10250
+    protocol        = "tcp"
+    security_groups = [aws_security_group.master_node_sg.id] # Restrict to Master SG
   }
 
   // kube-proxy (Internal use for networking, Load Balancers need access)
   ingress {
-    from_port   = 10256
-    to_port     = 10256
-    protocol    = "tcp"
-    self        = true  # Allow worker node itself & Load Balancers
+    from_port = 10256
+    to_port   = 10256
+    protocol  = "tcp"
+    self      = true # Allow worker node itself & Load Balancers
   }
 
   // NodePort Services (Allow external access to services)

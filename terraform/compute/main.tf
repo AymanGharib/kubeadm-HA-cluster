@@ -8,39 +8,39 @@ data "aws_ami" "server_ami" {
   }
 }
 
- resource "aws_instance" "master-node" {
-  
-
-   instance_type = var.instance_type
-   ami = data.aws_ami.server_ami.id
-   
+resource "aws_instance" "master-node" {
 
 
-
-   vpc_security_group_ids = [var.master_sg]
-
-   subnet_id =  var.public_subnet_id
+  instance_type = var.instance_type
+  ami           = data.aws_ami.server_ami.id
 
 
-user_data = templatefile(var.user_data_path, {
-       
-    
-
-        
-      
 
 
-   } )
+  vpc_security_group_ids = [var.master_sg]
+
+  subnet_id = var.public_subnet_id
+
+
+  user_data = base64encode(templatefile(var.user_data_path, {
 
 
 
 
 
- 
-   root_block_device {
-     volume_size = var.vol_size
-   }
-key_name = aws_key_pair.ssh_auth.key_name
+
+
+  }))
+
+
+
+
+
+
+  root_block_device {
+    volume_size = var.vol_size
+  }
+  key_name = aws_key_pair.ssh_auth.key_name
 
 
   tags = {
@@ -53,37 +53,29 @@ key_name = aws_key_pair.ssh_auth.key_name
 
 
 resource "aws_instance" "ansible-server" {
-  
-
-   instance_type = var.instance_type
-   ami = data.aws_ami.server_ami.id
-   
 
 
-
-   vpc_security_group_ids = [var.master_sg]
-
-   subnet_id =  var.public_subnet_id
-
-key_name = aws_key_pair.ssh_auth.key_name
-user_data = templatefile(var.ansible_data_path, {
-       
-    
-
-        
-      
+  instance_type = var.instance_type
+  ami           = data.aws_ami.server_ami.id
 
 
-   } )
+
+
+  vpc_security_group_ids = [var.ansible_sg]
+
+  subnet_id = var.public_subnet_id
+
+  key_name  = aws_key_pair.ssh_auth.key_name
+  user_data = base64encode(templatefile(var.worker_data_path, {}))
 
 
 
 
 
- 
-   root_block_device {
-     volume_size = var.vol_size
-   }
+
+  root_block_device {
+    volume_size = var.vol_size
+  }
 
 
 
@@ -97,9 +89,9 @@ user_data = templatefile(var.ansible_data_path, {
 
 
 resource "aws_key_pair" "ssh_auth" {
-    public_key = file(var.public_key_path)
-    key_name = var.key_name
-  
+  public_key = file(var.public_key_path)
+  key_name   = var.key_name
+
 }
 
 
@@ -119,15 +111,15 @@ resource "aws_key_pair" "ssh_auth" {
 
 
 resource "aws_launch_template" "worker-lt" {
-  name_prefix   = "worker-node-"
-  image_id      = data.aws_ami.server_ami.id
-  instance_type = var.instance_type
+  name_prefix            = "worker-node-"
+  image_id               = data.aws_ami.server_ami.id
+  instance_type          = var.instance_type
   vpc_security_group_ids = [var.worker_sgs]
-  key_name = aws_key_pair.ssh_auth.key_name
-   user_data = templatefile(var.worker_data_path , {})
- block_device_mappings {
-    device_name = "/dev/sda1"  # Default root device for Ubuntu
-    
+  key_name               = aws_key_pair.ssh_auth.key_name
+  user_data              = base64encode(templatefile(var.worker_data_path, {}))
+  block_device_mappings {
+    device_name = "/dev/sda1" # Default root device for Ubuntu
+
     ebs {
       volume_size           = var.vol_size
       volume_type           = "gp3"
@@ -135,7 +127,7 @@ resource "aws_launch_template" "worker-lt" {
       encrypted             = true
     }
   }
-   
+
 
   tag_specifications {
     resource_type = "instance"
@@ -147,8 +139,8 @@ resource "aws_launch_template" "worker-lt" {
 
 
 resource "aws_autoscaling_group" "worker_asg" {
-    depends_on = [ aws_instance.master-node ]
-  desired_capacity     = var.worker_count
+  depends_on          = [aws_instance.master-node]
+  desired_capacity    = var.worker_count
   min_size            = 1
   max_size            = 5
   vpc_zone_identifier = [var.private_subnet_id]
